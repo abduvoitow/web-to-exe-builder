@@ -7,55 +7,53 @@ import time
 TARGET_URL = "https://google.com"
 APP_NAME = "WebToEXE App"
 
-# CSS for our custom top bar
 TOOLBAR_CSS = """
     #pywebview-topbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 40px;
-        background: rgba(30, 30, 30, 0.95);
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 15px;
-        color: #fff;
-        z-index: 2147483647;
-        box-sizing: border-box;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        user-select: none;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 40px !important;
+        background: rgba(20, 20, 20, 0.98) !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 15px !important;
+        color: #fff !important;
+        z-index: 2147483647 !important;
+        box-sizing: border-box !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        user-select: none !important;
     }
     .pywebview-drag-region {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        z-index: -1;
+        position: absolute !important;
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: -1 !important;
     }
-    .nav-controls { display: flex; gap: 15px; z-index: 10; }
-    .nav-btn { cursor: pointer; opacity: 0.7; transition: 0.2s; display: flex; align-items: center; }
-    .nav-btn:hover { opacity: 1; }
-    .nav-btn svg { width: 18px; height: 18px; fill: #fff; }
+    .nav-controls { display: flex !important; gap: 15px !important; z-index: 10 !important; }
+    .nav-btn { cursor: pointer !important; opacity: 0.7 !important; transition: 0.2s !important; display: flex !important; align-items: center !important; }
+    .nav-btn:hover { opacity: 1 !important; }
+    .nav-btn svg { width: 18px !important; height: 18px !important; fill: #fff !important; }
     .title-logo { 
-        position: absolute; left: 50%; transform: translateX(-50%);
-        font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.9);
-        pointer-events: none;
+        position: absolute !important; left: 50% !important; transform: translateX(-50%) !important;
+        font-size: 13px !important; font-weight: 500 !important; color: rgba(255, 255, 255, 0.9) !important;
+        pointer-events: none !important;
     }
-    .window-controls { display: flex; gap: 12px; z-index: 10; padding-right: 25px; }
-    .win-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; }
-    .close { background: #ff5f56; }
-    .min { background: #ffbd2e; }
-    .max { background: #27c93f; }
+    .window-controls { display: flex !important; gap: 12px !important; z-index: 10 !important; padding-right: 10px !important; }
+    .win-btn { width: 12px !important; height: 12px !important; border-radius: 50% !important; cursor: pointer !important; border: none !important; }
+    .close { background: #ff5f56 !important; }
+    .min { background: #ffbd2e !important; }
+    .max { background: #27c93f !important; }
     
-    /* Push content down so it doesn't hide behind our bar */
-    html, body { margin-top: 40px !important; }
+    html, body { padding-top: 40px !important; }
 """
 
-# HTML for our custom top bar
 TOOLBAR_HTML = f"""
     <div id="pywebview-topbar" class="pywebview-drag-region">
         <div class="nav-controls">
@@ -89,31 +87,47 @@ class API:
         self.window.minimize()
 
     def maximize(self):
+        # On windows, toggle_fullscreen acts like maximize for frameless
         self.window.toggle_fullscreen()
 
 def inject_ui(window):
-    # This function injects the UI into the loaded page
-    # Escape single quotes and backticks for safety in JS string
-    css = TOOLBAR_CSS.replace('`', '\\`').replace('$', '\\$')
-    html = TOOLBAR_HTML.replace('`', '\\`').replace('$', '\\$')
+    css = TOOLBAR_CSS.replace('\n', ' ').replace('`', '\\`').replace('$', '\\$')
+    html = TOOLBAR_HTML.replace('\n', ' ').replace('`', '\\`').replace('$', '\\$')
     
     js = f"""
         (function() {{
-            if (document.getElementById('pywebview-topbar')) return;
-            
-            // Add Styles
-            var style = document.createElement('style');
-            style.id = 'pywebview-styles';
-            style.innerHTML = `{css}`;
-            document.head.appendChild(style);
-            
-            // Add HTML
-            var div = document.createElement('div');
-            div.innerHTML = `{html}`;
-            document.body.insertBefore(div, document.body.firstChild);
+            function tryInject() {{
+                if (document.getElementById('pywebview-topbar')) return;
+                if (!document.body || !document.head) return;
+
+                // Add Styles
+                var style = document.getElementById('pywebview-styles');
+                if (!style) {{
+                    style = document.createElement('style');
+                    style.id = 'pywebview-styles';
+                    style.innerHTML = `{css}`;
+                    document.head.appendChild(style);
+                }}
+                
+                // Add HTML
+                var div = document.createElement('div');
+                div.innerHTML = `{html}`;
+                document.body.insertBefore(div, document.body.firstChild);
+                
+                // Ensure body padding
+                document.body.style.paddingTop = '40px';
+                document.documentElement.style.paddingTop = '0px';
+            }}
+
+            // Try immediately and then every 500ms to catch dynamic changes
+            tryInject();
+            setInterval(tryInject, 1000);
         }})();
     """
-    window.run_js(js)
+    try:
+        window.run_js(js)
+    except:
+        pass
 
 def start_webview():
     api = API()
@@ -125,14 +139,16 @@ def start_webview():
         height=720,
         resizable=True,
         min_size=(800, 600),
-        frameless=True 
+        frameless=True,
+        text_select=True,
+        confirm_close=True
     )
     api.window = window
     
-    # Inject UI when any page finishes loading
+    # Run injection on load and every few seconds
     window.events.loaded += lambda: inject_ui(window)
     
-    webview.start()
+    webview.start(debug=False)
 
 if __name__ == "__main__":
     start_webview()
