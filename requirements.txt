@@ -1,2 +1,5 @@
 pywebview
 pyinstaller
+Pillow
+requests
+beautifulsoup4

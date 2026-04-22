@@ -27,6 +27,48 @@ jobs:
       run: |
         pip install -r requirements.txt
 
+    - name: Download Favicon and Convert to ICO
+      shell: python
+      run: |
+        import requests
+        from bs4 import BeautifulSoup
+        from PIL import Image
+        from urllib.parse import urljoin
+        import os
+
+        target_url = "${{ github.event.inputs.target_url }}"
+        icon_path = "app_icon.ico"
+        
+        try:
+            print(f"Searching favicon for {target_url}...")
+            response = requests.get(target_url, timeout=10)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Look for link rel icon
+            icon_link = soup.find("link", rel=lambda x: x and 'icon' in x.lower())
+            if icon_link and icon_link.get('href'):
+                favicon_url = urljoin(target_url, icon_link.get('href'))
+            else:
+                favicon_url = urljoin(target_url, "/favicon.ico")
+                
+            print(f"Downloading icon from {favicon_url}...")
+            icon_res = requests.get(favicon_url, timeout=10)
+            
+            with open("temp_icon", "wb") as f:
+                f.write(icon_res.content)
+            
+            img = Image.open("temp_icon")
+            # Convert to RGBA if not
+            if img.mode != 'RGBA':
+                img = img.convert('RGBA')
+            
+            # Save as ICO with multiple sizes for better quality
+            img.save(icon_path, format="ICO", sizes=[(256, 256), (128, 128), (64, 64), (32, 32), (16, 16)])
+            print("Icon successfully created.")
+        except Exception as e:
+            print(f"Could not create icon: {e}. Using default.")
+            # Default icon logic could go here or just let pyinstaller handle missing icon
+
     - name: Update main.py with inputs
       shell: python
       run: |
@@ -42,7 +84,11 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --noconsole --name "${{ github.event.inputs.app_name }}" main.py
+        if (Test-Path "app_icon.ico") {
+          pyinstaller --onefile --noconsole --icon="app_icon.ico" --name "${{ github.event.inputs.app_name }}" main.py
+        } else {
+          pyinstaller --onefile --noconsole --name "${{ github.event.inputs.app_name }}" main.py
+        }
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
