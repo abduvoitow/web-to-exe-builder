@@ -100,13 +100,28 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 # Bypass SSL verification if needed for certain sites, though generally safer to verify
                 resp = requests.get(url, headers=headers, timeout=15)
                 
+                content_type = resp.headers.get('Content-Type', '')
+                content = resp.content
+                
+                if 'text/html' in content_type:
+                    html_str = content.decode('utf-8', errors='ignore')
+                    base_tag = f'<base href="{resp.url}">'
+                    if '<head>' in html_str:
+                        html_str = html_str.replace('<head>', f'<head>{base_tag}', 1)
+                    elif '<HEAD>' in html_str:
+                        html_str = html_str.replace('<HEAD>', f'<HEAD>{base_tag}', 1)
+                    else:
+                        html_str = base_tag + html_str
+                    content = html_str.encode('utf-8')
+
                 self.send_response(resp.status_code)
                 for key, value in resp.headers.items():
                     # STRIP security headers to allow framing
-                    if key.lower() not in ['x-frame-options', 'content-security-policy', 'frame-ancestors']:
+                    if key.lower() not in ['x-frame-options', 'content-security-policy', 'frame-ancestors', 'content-length', 'content-encoding', 'transfer-encoding']:
                         self.send_header(key, value)
+                self.send_header('Content-Length', str(len(content)))
                 self.end_headers()
-                self.wfile.write(resp.content)
+                self.wfile.write(content)
             except Exception as e:
                 self.send_error(500, str(e))
             return
