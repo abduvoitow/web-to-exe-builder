@@ -133,7 +133,8 @@ def start_webview():
         width=1280, height=720,
         resizable=True, frameless=True
     )
-    window.expose(API(window))
+    api = API(window)
+    window.expose(api.close, api.minimize, api.maximize)
     
     webview.start(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
 
