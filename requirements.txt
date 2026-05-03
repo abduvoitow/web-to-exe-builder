@@ -1,4 +1,5 @@
-pywebview
+PyQt5
+PyQtWebEngine
 pyinstaller
 Pillow
 requests
